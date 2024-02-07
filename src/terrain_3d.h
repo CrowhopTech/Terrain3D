@@ -74,6 +74,8 @@ private:
 	bool _collision_enabled = true;
 	CollisionMode _collision_mode = DYNAMIC_GAME;
 	bool _collision_initialized = false;
+	Vector2 _old_snapped_pos = Vector2(0.0, 0.0);
+	Array _collision_shapes = Array();
 	Array _collision_shapes_unused = Array();
 	uint32_t _collision_dynamic_shape_size = 16;
 	real_t _collision_dynamic_distance = 64.0f;
