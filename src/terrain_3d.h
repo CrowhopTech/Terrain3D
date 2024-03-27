@@ -13,11 +13,14 @@
 #include <godot_cpp/classes/sub_viewport.hpp>
 
 #include "constants.h"
+#include "editor_collision_chunk_manager.h"
 #include "terrain_3d_assets.h"
 #include "terrain_3d_data.h"
 #include "terrain_3d_editor.h"
 #include "terrain_3d_instancer.h"
 #include "terrain_3d_material.h"
+
+class CollisionChunkManager;
 
 using namespace godot;
 
@@ -69,19 +72,15 @@ private:
 	int _label_size = 48;
 
 	// Collision
-	RID _static_body;
-	StaticBody3D *_editor_static_body = nullptr;
+	bool _collision_initialized = false;
 	bool _collision_enabled = true;
 	CollisionMode _collision_mode = DYNAMIC_GAME;
-	bool _collision_initialized = false;
-	Vector2 _old_snapped_pos = Vector2(0.0, 0.0);
-	Array _collision_shapes = Array();
-	Array _collision_shapes_unused = Array();
 	uint32_t _collision_dynamic_shape_size = 16;
 	real_t _collision_dynamic_distance = 64.0f;
 	uint32_t _collision_layer = 1;
 	uint32_t _collision_mask = 1;
 	real_t _collision_priority = 1.0f;
+	CollisionChunkManager *_chunk_manager = nullptr;
 
 	// Meshes
 	int _mesh_lods = 7;
