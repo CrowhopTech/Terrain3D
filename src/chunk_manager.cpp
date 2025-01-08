@@ -2,7 +2,7 @@
 
 #include "chunk_manager.h"
 #include "logger.h"
-#include "terrain_3d_storage.h"
+#include "terrain_3d_data.h"
 
 void ChunkManager::move(Vector3 p_camera_position) {
 	Vector2i pos_snapped = _snap_position(p_camera_position);
@@ -115,7 +115,7 @@ void ChunkManager::set_distance(float p_distance) {
 	_build();
 }
 
-void ChunkManager::set_chunk_size(uint p_size) {
+void ChunkManager::set_chunk_size(unsigned int p_size) {
 	// Round up to nearest power of 2
 	{
 		p_size--;

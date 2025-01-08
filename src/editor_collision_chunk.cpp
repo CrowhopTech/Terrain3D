@@ -1,11 +1,12 @@
 // Copyright © 2024 Lorenz Wildberg
 
-#include "editor_collision_chunk.h"
-#include "logger.h"
 #include <godot_cpp/classes/height_map_shape3d.hpp>
 #include <godot_cpp/classes/project_settings.hpp>
 
-EditorCollisionChunk::EditorCollisionChunk(EditorCollisionChunkManager *p_manager, uint p_size) :
+#include "editor_collision_chunk.h"
+#include "logger.h"
+
+EditorCollisionChunk::EditorCollisionChunk(EditorCollisionChunkManager *p_manager, unsigned int p_size) :
 		BaseChunk(p_manager, p_size) {
 	_col_shape = memnew(CollisionShape3D);
 	_col_shape->set_name("CollisionShape3D");
@@ -35,40 +36,37 @@ void EditorCollisionChunk::refill() {
 }
 
 inline PackedFloat32Array EditorCollisionChunk::fill_map(Transform3D *xform) {
-	Ref<Terrain3DStorage> storage = ((CollisionChunkManager *)_manager)->_terrain->get_storage();
-	float hole_const = NAN;
-	if (ProjectSettings::get_singleton()->get_setting("physics/3d/physics_engine") == "JoltPhysics3D") {
-		hole_const = __FLT_MAX__;
-	}
-
-	int region = storage->get_region_index(Vector3(_position.x, 0, _position.y));
-	int region_size = storage->get_region_size();
+	Ref<Terrain3DData> data = ((CollisionChunkManager *)_manager)->_terrain->get_data();
+	int region_size = _terrain->get_region_size();
 
 	PackedFloat32Array map_data = PackedFloat32Array();
 	map_data.resize(_size * _size);
 
 	Ref<Image> map, map_x, map_z, map_xz;
 	Ref<Image> cmap, cmap_x, cmap_z, cmap_xz;
-	map = storage->get_map_region(Terrain3DStorage::TYPE_HEIGHT, region);
-	cmap = storage->get_map_region(Terrain3DStorage::TYPE_CONTROL, region);
-	if (region >= 0) {
-		map = storage->get_map_region(Terrain3DStorage::TYPE_HEIGHT, region);
-		cmap = storage->get_map_region(Terrain3DStorage::TYPE_CONTROL, region);
+
+	Ref<Terrain3DRegion> region = data->get_regionp(Vector3(_position.x, 0, _position.y));
+	if (region.is_null()) {
+		LOG(ERROR, "Region ", region_loc, " not found");
+		return;
 	}
-	region = storage->get_region_index(Vector3(_position.x + _size, 0, _position.y));
-	if (region >= 0) {
-		map_x = storage->get_map_region(Terrain3DStorage::TYPE_HEIGHT, region);
-		cmap_x = storage->get_map_region(Terrain3DStorage::TYPE_CONTROL, region);
+	map = region->get_map(TYPE_HEIGHT);
+	cmap = region->get_map(TYPE_CONTROL);
+
+	region = _data->get_regionp(Vector3(_position.x + _size, 0.f, _position.y) * _vertex_spacing);
+	if (region.is_valid()) {
+		map_x = region->get_map(TYPE_HEIGHT);
+		cmap_x = region->get_map(TYPE_CONTROL);
 	}
-	region = storage->get_region_index(Vector3(_position.x, 0, _position.y + _size));
-	if (region >= 0) {
-		map_z = storage->get_map_region(Terrain3DStorage::TYPE_HEIGHT, region);
-		cmap_z = storage->get_map_region(Terrain3DStorage::TYPE_CONTROL, region);
+	region = _data->get_regionp(Vector3(_position.x, 0.f, _position.y + _size) * _vertex_spacing);
+	if (region.is_valid()) {
+		map_z = region->get_map(TYPE_HEIGHT);
+		cmap_z = region->get_map(TYPE_CONTROL);
 	}
-	region = storage->get_region_index(Vector3(_position.x + _size, 0, _position.y + _size));
-	if (region >= 0) {
-		map_xz = storage->get_map_region(Terrain3DStorage::TYPE_HEIGHT, region);
-		cmap_xz = storage->get_map_region(Terrain3DStorage::TYPE_CONTROL, region);
+	region = _data->get_regionp(Vector3(_position.x + _size, 0.f, _position.y + _size) * _vertex_spacing);
+	if (region.is_valid()) {
+		map_xz = region->get_map(TYPE_HEIGHT);
+		cmap_xz = region->get_map(TYPE_CONTROL);
 	}
 
 	for (int z = 0; z < _size; z++) {
@@ -92,25 +90,25 @@ inline PackedFloat32Array EditorCollisionChunk::fill_map(Transform3D *xform) {
 			// Set heights on local map, or adjacent maps if on the last row/col
 			if (shape_global_x < region_size && shape_global_z < region_size) {
 				if (map.is_valid()) {
-					map_data[index] = (Util::is_hole(cmap->get_pixel(shape_global_x, shape_global_z).r)) ? hole_const : map->get_pixel(shape_global_x, shape_global_z).r;
+					map_data[index] = (is_hole(cmap->get_pixel(shape_global_x, shape_global_z).r)) ? NAN : map->get_pixel(shape_global_x, shape_global_z).r;
 				} else {
 					map_data[index] = 0.0;
 				}
 			} else if (shape_global_x == region_size && shape_global_z < region_size) {
 				if (map_x.is_valid()) {
-					map_data[index] = (Util::is_hole(cmap_x->get_pixel(0, shape_global_z).r)) ? hole_const : map_x->get_pixel(0, shape_global_z).r;
+					map_data[index] = (is_hole(cmap_x->get_pixel(0, shape_global_z).r)) ? NAN : map_x->get_pixel(0, shape_global_z).r;
 				} else {
 					map_data[index] = 0.0f;
 				}
 			} else if (shape_global_z == region_size && shape_global_x < region_size) {
 				if (map_z.is_valid()) {
-					map_data[index] = (Util::is_hole(cmap_z->get_pixel(shape_global_x, 0).r)) ? hole_const : map_z->get_pixel(shape_global_x, 0).r;
+					map_data[index] = (is_hole(cmap_z->get_pixel(shape_global_x, 0).r)) ? NAN : map_z->get_pixel(shape_global_x, 0).r;
 				} else {
 					map_data[index] = 0.0f;
 				}
 			} else if (shape_global_x == region_size && shape_global_z == region_size) {
 				if (map_xz.is_valid()) {
-					map_data[index] = (Util::is_hole(cmap_xz->get_pixel(0, 0).r)) ? hole_const : map_xz->get_pixel(0, 0).r;
+					map_data[index] = (is_hole(cmap_xz->get_pixel(0, 0).r)) ? NAN : map_xz->get_pixel(0, 0).r;
 				} else {
 					map_data[index] = 0.0f;
 				}

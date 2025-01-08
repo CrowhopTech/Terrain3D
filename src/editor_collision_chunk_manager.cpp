@@ -10,10 +10,8 @@ EditorCollisionChunkManager::EditorCollisionChunkManager() {
 }
 
 EditorCollisionChunkManager::~EditorCollisionChunkManager() {
-	if (_body != nullptr) {
-		remove_child(_body);
-		memfree(_body);
-	}
+	remove_from_tree(_body);
+	memdelete_safely(_body);
 }
 
 BaseChunk *EditorCollisionChunkManager::create_chunk() {

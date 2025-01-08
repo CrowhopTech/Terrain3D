@@ -3,8 +3,10 @@
 #ifndef BASECHUNK_CLASS_H
 #define BASECHUNK_CLASS_H
 
-#include "chunk_manager.h"
 #include <godot_cpp/templates/vector.hpp>
+
+#include "chunk_manager.h"
+#include "constants.h"
 
 using namespace godot;
 
@@ -12,14 +14,13 @@ class ChunkManager;
 
 class BaseChunk : public Object {
 	GDCLASS(BaseChunk, Object);
+	CLASS_NAME();
 
-public:
-	// Constants
-	static inline const char *__class__ = "Terrain3DBaseChunk";
+public: // Constants
 
 protected:
 	Vector2i _position = Vector2i(0, 0);
-	uint _size = 0;
+	unsigned int _size = 0;
 	ChunkManager *_manager = nullptr;
 
 public:
@@ -29,7 +30,7 @@ public:
 	Vector2i get_position() { return _position; }
 
 	BaseChunk() {}
-	BaseChunk(ChunkManager *p_manager, uint p_size) {
+	BaseChunk(ChunkManager *p_manager, unsigned int p_size) {
 		_manager = p_manager;
 		_size = p_size;
 	}

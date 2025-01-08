@@ -3,9 +3,10 @@
 #ifndef COLLISIONCHUNKMANAGER_CLASS_H
 #define COLLISIONCHUNKMANAGER_CLASS_H
 
+#include <godot_cpp/classes/static_body3d.hpp>
+
 #include "chunk_manager.h"
 #include "terrain_3d.h"
-#include <godot_cpp/classes/static_body3d.hpp>
 
 class Terrain3D;
 
@@ -13,11 +14,11 @@ using namespace godot;
 
 class CollisionChunkManager : public ChunkManager {
 	GDCLASS(CollisionChunkManager, ChunkManager);
+	CLASS_NAME();
 
-public:
-	// Constants
-	static inline const char *__class__ = "Terrain3DCollisionChunkManager";
+public: // Constants
 
+private:
 	Terrain3D *_terrain = nullptr;
 
 public:

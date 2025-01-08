@@ -3,25 +3,25 @@
 #ifndef EDITORCOLLISIONCHUNK_CLASS_H
 #define EDITORCOLLISIONCHUNK_CLASS_H
 
+#include <godot_cpp/classes/collision_shape3d.hpp>
+
 #include "base_chunk.h"
 #include "editor_collision_chunk_manager.h"
-#include <godot_cpp/classes/collision_shape3d.hpp>
 
 using namespace godot;
 
 class EditorCollisionChunk : public BaseChunk {
 	GDCLASS(EditorCollisionChunk, BaseChunk);
+	CLASS_NAME();
 
-public:
-	// Constants
-	static inline const char *__class__ = "Terrain3DEditorCollisionChunk";
+public: // Constants
 
 private:
 	CollisionShape3D *_col_shape = nullptr;
 
 public:
 	EditorCollisionChunk() {}
-	EditorCollisionChunk(EditorCollisionChunkManager *p_manager, uint p_size);
+	EditorCollisionChunk(EditorCollisionChunkManager *p_manager, unsigned int p_size);
 	~EditorCollisionChunk();
 
 	void refill() override;

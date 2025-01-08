@@ -210,21 +210,15 @@ void Terrain3D::_update_collision(Vector3 p_cam_pos) {
 	Vector3 cam_pos = p_cam_pos;
 	cam_pos.y = 0;
 	int time = Time::get_singleton()->get_ticks_usec();
-
-	Vector3 cam_pos = (_camera != nullptr) ? _camera->get_global_position() : Vector3();
 	_chunk_manager->move(cam_pos);
-
 	LOG(EXTREME, "Collision update time: ", Time::get_singleton()->get_ticks_usec() - time, " us");
 }
 
 void Terrain3D::_destroy_collision() {
 	// Free any RIDs allocated by the Physics Server
 	LOG(INFO, "Destroy Collision");
-
-	if (_chunk_manager != nullptr) {
-		remove_child(_chunk_manager);
-		memfree(_chunk_manager);
-	}
+	remove_from_tree(_chunk_manager);
+	memdelete_safely(_chunk_manager);
 }
 
 void Terrain3D::_build_meshes(const int p_mesh_lods, const int p_mesh_size) {

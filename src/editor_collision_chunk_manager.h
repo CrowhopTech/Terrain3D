@@ -11,11 +11,9 @@ using namespace godot;
 
 class EditorCollisionChunkManager : public CollisionChunkManager {
 	GDCLASS(EditorCollisionChunkManager, CollisionChunkManager);
+	CLASS_NAME();
 
-public:
-	// Constants
-	static inline const char *__class__ = "Terrain3DEditorCollisionChunkManager";
-
+public: // Constants
 	StaticBody3D *_body = nullptr;
 
 public:

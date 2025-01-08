@@ -3,8 +3,11 @@
 #ifndef CHUNKMANAGER_CLASS_H
 #define CHUNKMANAGER_CLASS_H
 
-#include "base_chunk.h"
 #include <godot_cpp/classes/node3d.hpp>
+
+#include "base_chunk.h"
+#include "constants.h"
+
 
 using namespace godot;
 
@@ -12,18 +15,18 @@ class BaseChunk;
 
 class ChunkManager : public Node3D {
 	GDCLASS(ChunkManager, Node3D);
+	CLASS_NAME();
 
-public:
-	// Constants
-	static inline const char *__class__ = "Terrain3DChunkManager";
+public: // Constants
+
 
 protected:
-	uint _chunk_size = 16;
+	unsigned int _chunk_size = 16;
 
 private:
 	float _distance = 64.0;
-	uint _chunks_width = 0;
-	uint _chunk_count = 0;
+	unsigned int _chunks_width = 0;
+	unsigned int _chunk_count = 0;
 	Array _active_chunks = Array();
 	Array _old_chunks = Array();
 	Array _inactive_chunks = Array();
@@ -36,8 +39,8 @@ private:
 public:
 	ChunkManager() {}
 
-	void set_chunk_size(uint p_size);
-	uint get_chunk_size() { return _chunk_size; }
+	void set_chunk_size(unsigned int p_size);
+	unsigned int get_chunk_size() { return _chunk_size; }
 	void set_distance(float p_distance);
 	float get_distance() { return _distance; }
 	void move(Vector3 p_camera_position);
