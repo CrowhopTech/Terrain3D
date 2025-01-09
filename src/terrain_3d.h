@@ -15,6 +15,7 @@
 #include "constants.h"
 #include "editor_collision_chunk_manager.h"
 #include "terrain_3d_assets.h"
+#include "terrain_3d_collision.h"
 #include "terrain_3d_data.h"
 #include "terrain_3d_editor.h"
 #include "terrain_3d_instancer.h"
@@ -57,6 +58,7 @@ private:
 	Ref<Terrain3DMaterial> _material;
 	Ref<Terrain3DAssets> _assets;
 	Terrain3DInstancer *_instancer = nullptr;
+	Terrain3DCollision *_collision = nullptr;
 	Terrain3DEditor *_editor = nullptr;
 	EditorPlugin *_plugin = nullptr;
 	// Current editor or gameplay camera we are centering the terrain on.
@@ -160,6 +162,7 @@ public:
 	Ref<Terrain3DMaterial> get_material() const { return _material; }
 	void set_assets(const Ref<Terrain3DAssets> &p_assets);
 	Ref<Terrain3DAssets> get_assets() const { return _assets; }
+	Terrain3DCollision *get_collision() const { return _collision; }
 	Terrain3DInstancer *get_instancer() const { return _instancer; }
 	Node *get_mmi_parent() const { return _mmi_parent; }
 	void set_editor(Terrain3DEditor *p_editor);

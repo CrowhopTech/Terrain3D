@@ -19,6 +19,7 @@ void initialize_terrain_3d(ModuleInitializationLevel p_level) {
 	ClassDB::register_class<Terrain3DAssets>();
 	ClassDB::register_class<Terrain3DData>();
 	ClassDB::register_class<Terrain3DEditor>();
+	ClassDB::register_class<Terrain3DCollision>();
 	ClassDB::register_class<Terrain3DInstancer>();
 	ClassDB::register_class<Terrain3DMaterial>();
 	ClassDB::register_class<Terrain3DMeshAsset>();
@@ -26,8 +27,8 @@ void initialize_terrain_3d(ModuleInitializationLevel p_level) {
 	ClassDB::register_class<Terrain3DTextureAsset>();
 	ClassDB::register_class<Terrain3DUtil>();
 	ClassDB::register_class<BaseChunk>();
-	ClassDB::register_class<ChunkManager>();
 	ClassDB::register_class<EditorCollisionChunk>();
+	ClassDB::register_class<ChunkManager>();
 	ClassDB::register_class<CollisionChunkManager>();
 	ClassDB::register_class<EditorCollisionChunkManager>();
 }

@@ -45,8 +45,12 @@ void Terrain3D::_initialize() {
 		LOG(DEBUG, "Creating blank texture list");
 		_assets.instantiate();
 	}
+	if (_collision == nullptr) {
+		LOG(DEBUG, "Creating collision manager");
+		_collision = memnew(Terrain3DCollision);
+	}
 	if (_instancer == nullptr) {
-		LOG(DEBUG, "Creating blank instancer");
+		LOG(DEBUG, "Creating instancer");
 		_instancer = memnew(Terrain3DInstancer);
 	}
 
@@ -87,6 +91,7 @@ void Terrain3D::_initialize() {
 		_data->initialize(this);
 		_material->initialize(this);
 		_assets->initialize(this);
+		_collision->initialize(this);
 		_instancer->initialize(this);
 		_build_meshes(_mesh_lods, _mesh_size);
 		_build_collision();
@@ -168,6 +173,7 @@ void Terrain3D::_destroy_labels() {
 }
 
 void Terrain3D::_destroy_instancer() {
+	LOG(INFO, "Destroying Instancer");
 	memdelete_safely(_instancer);
 }
 
@@ -216,7 +222,8 @@ void Terrain3D::_update_collision(Vector3 p_cam_pos) {
 
 void Terrain3D::_destroy_collision() {
 	// Free any RIDs allocated by the Physics Server
-	LOG(INFO, "Destroy Collision");
+	LOG(INFO, "Destroying Collision");
+	memdelete_safely(_collision);
 	remove_from_tree(_chunk_manager);
 	memdelete_safely(_chunk_manager);
 }
@@ -1387,6 +1394,7 @@ void Terrain3D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_material"), &Terrain3D::get_material);
 	ClassDB::bind_method(D_METHOD("set_assets", "assets"), &Terrain3D::set_assets);
 	ClassDB::bind_method(D_METHOD("get_assets"), &Terrain3D::get_assets);
+	ClassDB::bind_method(D_METHOD("get_collision"), &Terrain3D::get_collision);
 	ClassDB::bind_method(D_METHOD("get_instancer"), &Terrain3D::get_instancer);
 	ClassDB::bind_method(D_METHOD("set_editor", "editor"), &Terrain3D::set_editor);
 	ClassDB::bind_method(D_METHOD("get_editor"), &Terrain3D::get_editor);
@@ -1492,6 +1500,7 @@ void Terrain3D::_bind_methods() {
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "data", PROPERTY_HINT_NONE, "Terrain3DData", PROPERTY_USAGE_NONE), "", "get_data");
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "material", PROPERTY_HINT_RESOURCE_TYPE, "Terrain3DMaterial"), "set_material", "get_material");
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "assets", PROPERTY_HINT_RESOURCE_TYPE, "Terrain3DAssets"), "set_assets", "get_assets");
+	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "collision", PROPERTY_HINT_NONE, "Terrain3DCollision", PROPERTY_USAGE_NONE), "", "get_collision");
 	ADD_PROPERTY(PropertyInfo(Variant::OBJECT, "instancer", PROPERTY_HINT_NONE, "Terrain3DInstancer", PROPERTY_USAGE_NONE), "", "get_instancer");
 
 	ADD_GROUP("Regions", "");
