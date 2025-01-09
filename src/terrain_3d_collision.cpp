@@ -1,6 +1,7 @@
 // Copyright © 2025 Cory Petkovsek, Roope Palmroos, and Contributors.
 
 #include <godot_cpp/classes/collision_shape3d.hpp>
+#include <godot_cpp/classes/engine.hpp>
 
 #include "logger.h"
 #include "terrain_3d_collision.h"
@@ -20,19 +21,12 @@ void Terrain3DCollision::initialize(Terrain3D *p_terrain) {
 }
 
 void Terrain3DCollision::build() {
-	// Skip if not enabled or not in the world
-	if (!_enabled || !_is_inside_world || !is_inside_tree()) {
-		return;
-	}
+	IS_DATA_INIT_MESG("Terrain3D not initialized.", VOID);
 	// Clear collision as the user might change modes in the editor
 	destroy();
 
 	// Create collision only in applicable modes
-	if (IS_EDITOR && !is_editor_mode()) {
-		return;
-	}
-	if (_data == nullptr) {
-		LOG(ERROR, "_data not initialized, cannot create collision");
+	if (!is_enabled() || (IS_EDITOR && !is_editor_mode())) {
 		return;
 	}
 
@@ -43,9 +37,9 @@ void Terrain3DCollision::build() {
 	add_child(_chunk_manager);
 	_chunk_manager->set_owner(this);
 	_initialized = true;
-	// TODO Get snap position instead
-	Vector3 cam_pos = (_camera != nullptr) ? _camera->get_global_position() : Vector3();
 
+	// TODO Get snap position instead
+	Vector3 cam_pos = (_terrain->get_camera() != nullptr) ? _terrain->get_camera()->get_global_position() : Vector3();
 	update(cam_pos);
 }
 
@@ -53,7 +47,6 @@ void Terrain3DCollision::update(Vector3 p_cam_pos) {
 	if (!_initialized) {
 		return;
 	}
-
 	LOG(DEBUG, "Updating collision");
 
 	Vector3 cam_pos = p_cam_pos;
@@ -105,10 +98,10 @@ void Terrain3DCollision::set_dynamic_shape_size(const uint32_t p_size) {
 }
 
 void Terrain3DCollision::set_dynamic_distance(const real_t p_distance) {
-	p_distance = MAX(_dynamic_shape_size, p_distance);
-	p_distance = CLAMP(p_distance, 24.0, 256);
-	LOG(INFO, "Setting collision dynamic distance: ", p_distance);
-	_dynamic_distance = p_distance;
+	real_t distance = MAX(_dynamic_shape_size, p_distance);
+	distance = CLAMP(distance, 24.0, 256);
+	LOG(INFO, "Setting collision dynamic distance: ", distance);
+	_dynamic_distance = distance;
 	_initialized = false;
 	build();
 }
