@@ -9,22 +9,63 @@
 
 using namespace godot;
 
+class Terrain3D;
+
 class Terrain3DCollision : public Object {
 	GDCLASS(Terrain3DCollision, Object);
 	CLASS_NAME();
 
 public: // Constants
+	enum CollisionMode {
+		DISABLED,
+		DYNAMIC_GAME,
+		DYNAMIC_EDITOR,
+		FULL_GAME,
+		FULL_EDITOR,
+	};
 
 private:
 	Terrain3D *_terrain = nullptr;
+
+	bool _initialized = false;
+	CollisionMode _mode = DYNAMIC_GAME;
+	uint32_t _dynamic_shape_size = 16;
+	real_t _dynamic_distance = 64.0f;
+	uint32_t _layer = 1;
+	uint32_t _mask = 1;
+	real_t _priority = 1.0f;
 
 public:
 	Terrain3DCollision() {}
 	~Terrain3DCollision() {}
 	void initialize(Terrain3D *p_terrain);
 
+	void build();
+	void update(const Vector3 p_cam_pos = V3_ZERO);
+	void destroy();
+
+	void set_mode(const CollisionMode p_mode);
+	CollisionMode get_mode() const { return _mode; }
+	bool is_enabled() const { return _mode > DISABLED; }
+	bool is_editor_mode() const { return _mode == DYNAMIC_EDITOR || _mode == FULL_EDITOR; }
+	bool is_dynamic_mode() const { return _mode == DYNAMIC_GAME || _mode == DYNAMIC_EDITOR; }
+	void set_dynamic_shape_size(const uint32_t p_size);
+	uint32_t get_dynamic_shape_size() const { return _dynamic_shape_size; }
+	void set_dynamic_distance(const real_t p_distance);
+	real_t get_dynamic_distance() const { return _dynamic_distance; }
+	void set_layer(const uint32_t p_layers);
+	uint32_t get_layer() const { return _layer; };
+	void set_mask(const uint32_t p_mask);
+	uint32_t get_mask() const { return _mask; };
+	void set_priority(const real_t p_priority);
+	real_t get_priority() const { return _priority; }
+	RID get_rid() const;
 
 protected:
+	void _bind_methods();
 };
+
+typedef Terrain3DCollision::CollisionMode CollisionMode;
+VARIANT_ENUM_CAST(Terrain3DCollision::CollisionMode);
 
 #endif // TERRAIN3D_COLLISION_CLASS_H
