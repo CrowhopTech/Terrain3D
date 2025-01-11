@@ -1,10 +1,216 @@
 // Copyright © 2025 Cory Petkovsek, Roope Palmroos, and Contributors.
 
-#include <godot_cpp/classes/collision_shape3d.hpp>
 #include <godot_cpp/classes/engine.hpp>
+#include <godot_cpp/classes/height_map_shape3d.hpp>
 
 #include "logger.h"
 #include "terrain_3d_collision.h"
+
+///////////////////////////
+// Private Functions
+///////////////////////////
+
+CollisionShape3D *Terrain3DCollision::_create_shape() {
+	CollisionShape3D *col_shape = memnew(CollisionShape3D);
+	col_shape->set_name("CollisionShape3D");
+	col_shape->set_visible(false);
+	Ref<HeightMapShape3D> hshape;
+	hshape.instantiate();
+	hshape->set_map_width(_shape_size + 1);
+	hshape->set_map_depth(_shape_size + 1);
+	col_shape->set_shape(hshape);
+	_body->add_child(col_shape);
+	col_shape->set_owner(_body);
+	LOG(DEBUG, "Created new shape");
+}
+
+void Terrain3DCollision::_destroy_shape(const CollisionShape3D &p_shape) {
+	remove_from_tree(p_shape);
+	memdelete_safely(p_shape);
+}
+
+void Terrain3DCollision::_mold_shape(CollisionShape3D &p_shape, const Vector3 &p_position) {
+	IS_DATA_INIT_MESG("Terrain not initialized", VOID);
+	Ref<Terrain3DData> data = _terrain->get_data();
+	int region_size = _terrain->get_region_size();
+	real_t vertex_spacing = _terrain->get_vertex_spacing();
+
+	PackedFloat32Array map_data = PackedFloat32Array();
+	map_data.resize(_shape_size * _shape_size);
+
+	Ref<Image> map, map_x, map_z, map_xz;
+	Ref<Image> cmap, cmap_x, cmap_z, cmap_xz;
+
+	Ref<Terrain3DRegion> region = data->get_regionp(Vector3(p_position.x, 0, p_position.y));
+	if (region.is_null()) {
+		LOG(ERROR, "Region ", region_loc, " not found");
+		return;
+	}
+	map = region->get_map(TYPE_HEIGHT);
+	cmap = region->get_map(TYPE_CONTROL);
+
+	region = data->get_regionp(Vector3(p_position.x + _shape_size, 0.f, p_position.y) * vertex_spacing);
+	if (region.is_valid()) {
+		map_x = region->get_map(TYPE_HEIGHT);
+		cmap_x = region->get_map(TYPE_CONTROL);
+	}
+	region = data->get_regionp(Vector3(p_position.x, 0.f, p_position.y + _shape_size) * vertex_spacing);
+	if (region.is_valid()) {
+		map_z = region->get_map(TYPE_HEIGHT);
+		cmap_z = region->get_map(TYPE_CONTROL);
+	}
+	region = data->get_regionp(Vector3(p_position.x + _shape_size, 0.f, p_position.y + _shape_size) * vertex_spacing);
+	if (region.is_valid()) {
+		map_xz = region->get_map(TYPE_HEIGHT);
+		cmap_xz = region->get_map(TYPE_CONTROL);
+	}
+
+	for (int z = 0; z < _shape_size; z++) {
+		for (int x = 0; x < _shape_size; x++) {
+			// Choose array indexing to match triangulation of heightmapshape with the mesh
+			// https://stackoverflow.com/questions/16684856/rotating-a-2d-pixel-array-by-90-degrees
+			// Normal array index rotated Y=0 - shape rotation Y=0 (xform below)
+			// int index = z * shape_size + x;
+			// Array Index Rotated Y=-90 - must rotate shape Y=+90 (xform below)
+			int index = _shape_size - 1 - z + x * _shape_size;
+
+			int shape_global_x = x + (p_position.x % region_size);
+			if (shape_global_x < 0) {
+				shape_global_x = region_size + shape_global_x;
+			}
+			LOG(INFO, shape_global_x, " ", p_position.x, " ", region_size, " ", x);
+			int shape_global_z = z + (p_position.y % region_size);
+			if (shape_global_z < 0) {
+				shape_global_z = region_size + shape_global_z;
+			}
+			// Set heights on local map, or adjacent maps if on the last row/col
+			if (shape_global_x < region_size && shape_global_z < region_size) {
+				if (map.is_valid()) {
+					map_data[index] = (is_hole(cmap->get_pixel(shape_global_x, shape_global_z).r)) ? NAN : map->get_pixel(shape_global_x, shape_global_z).r;
+				} else {
+					map_data[index] = 0.0;
+				}
+			} else if (shape_global_x == region_size && shape_global_z < region_size) {
+				if (map_x.is_valid()) {
+					map_data[index] = (is_hole(cmap_x->get_pixel(0, shape_global_z).r)) ? NAN : map_x->get_pixel(0, shape_global_z).r;
+				} else {
+					map_data[index] = 0.0f;
+				}
+			} else if (shape_global_z == region_size && shape_global_x < region_size) {
+				if (map_z.is_valid()) {
+					map_data[index] = (is_hole(cmap_z->get_pixel(shape_global_x, 0).r)) ? NAN : map_z->get_pixel(shape_global_x, 0).r;
+				} else {
+					map_data[index] = 0.0f;
+				}
+			} else if (shape_global_x == region_size && shape_global_z == region_size) {
+				if (map_xz.is_valid()) {
+					map_data[index] = (is_hole(cmap_xz->get_pixel(0, 0).r)) ? NAN : map_xz->get_pixel(0, 0).r;
+				} else {
+					map_data[index] = 0.0f;
+				}
+			}
+		}
+	}
+
+	// Non rotated shape for normal array index above
+	//Transform3D xform = Transform3D(Basis(), global_pos);
+	// Rotated shape Y=90 for -90 rotated array index
+	Transform3D xform = Transform3D(Basis(Vector3(0, 1.0, 0), Math_PI * .5), Vector3(p_position.x, 0.0, p_position.y));
+	p_shape.set_transform(xform);
+	Ref<HeightMapShape3D> shape = p_shape.get_shape();
+	shape->set_map_data(map_data);
+}
+
+Vector2i Terrain3DCollision::_snap_position(Vector3 p_position) {
+	Vector2 camera_position = Vector2(p_position.x, p_position.z);
+	Vector2i pos_snapped;
+	float positive_camera_position_x = (camera_position.x < 0.0) ? -camera_position.x : camera_position.x;
+	pos_snapped.x = (Math::floor(positive_camera_position_x / _shape_size) + 0.5) * _shape_size;
+	if (camera_position.x < 0.0) {
+		pos_snapped.x *= -1;
+	}
+	float positive_camera_position_y = (camera_position.y < 0.0) ? -camera_position.y : camera_position.y;
+	pos_snapped.y = (Math::floor(positive_camera_position_y / _shape_size) + 0.5) * _shape_size;
+	if (camera_position.y < 0.0) {
+		pos_snapped.y *= -1;
+	}
+	return pos_snapped;
+}
+
+void Terrain3DCollision::_move_shape(const CollisionShape3D &p_shape, const Vector3 &p_camera_position) {
+	Vector2i pos_snapped = _snap_position(p_camera_position);
+	Vector2i snapped_delta = pos_snapped - _old_snapped_pos;
+	_old_snapped_pos = pos_snapped;
+
+	Array new_array = Array();
+	new_array.resize(_shape_count);
+	new_array.fill(Variant(1));
+
+	// 3 times:
+	for (int t = 1; t <= 3; t++) {
+		for (int i = 0; i < _shape_width; i++) {
+			for (int j = 0; j < _shape_width; j++) {
+				int index = i * _shape_width + j;
+
+				// offset to the old camera position
+				Vector2i old_array_position = Vector2i(i, j) + snapped_delta;
+
+				// index for the current chunk in the new array in the old array
+				int old_index = old_array_position.x * _shape_width + old_array_position.y;
+
+				bool position_still_exists_in_old =
+						_shape_width > old_array_position.x && old_array_position.x >= 0 &&
+						_shape_width > old_array_position.y && old_array_position.y >= 0;
+
+				// in world coordinates
+				Vector2i chunk_location = pos_snapped + Vector2i((i - _shape_width * 0.5) * _shape_size, (j - _shape_width * 0.5) * _shape_size);
+
+				bool too_far = Vector2(chunk_location).distance_to(Vector2(p_camera_position.x, p_camera_position.z)) > _distance;
+
+				switch (t) {
+					case 1:
+						if (position_still_exists_in_old && !too_far) {
+							// move chunk to new location but don't refill
+							new_array[index] = _active_shapes[old_index];
+							if (_active_shapes[old_index] == Variant(1)) {
+								new_array[index] = Object::cast_to<BaseChunk>(_inactive_shapes.pop_back());
+								Object::cast_to<BaseChunk>(new_array[index])->set_enabled(true);
+							}
+							Object::cast_to<BaseChunk>(new_array[index])->set_position(chunk_location);
+							_active_shapes[old_index] = Variant(1);
+						}
+						break;
+					case 2:
+						// disable remaining chunks
+						if (_active_shapes[index] != Variant(1)) {
+							Object::cast_to<BaseChunk>(_active_shapes[index])->set_enabled(false);
+							_inactive_shapes.push_back(_active_shapes[index]);
+							_active_shapes[index] = Variant(1);
+						}
+						break;
+					case 3:
+						if (!too_far && !position_still_exists_in_old) {
+							// create new chunks from inactive
+							BaseChunk *new_chunk = Object::cast_to<BaseChunk>(_inactive_shapes.pop_back());
+							new_chunk->set_position(chunk_location);
+							new_chunk->refill();
+							Transform3D xform;
+							PackedFloat32Array map_data = fill_map(&xform);
+
+							Ref<HeightMapShape3D> hshape = _col_shape->get_shape();
+							hshape->set_map_data(map_data);
+							_col_shape->set_global_transform(xform);
+							new_chunk->set_enabled(true);
+							new_array[index] = new_chunk;
+						}
+						break;
+				}
+			}
+		}
+	}
+
+	_active_shapes = new_array;
+}
 
 ///////////////////////////
 // Public Functions
@@ -30,12 +236,19 @@ void Terrain3DCollision::build() {
 		return;
 	}
 
-	_chunk_manager = memnew(EditorCollisionChunkManager);
-	_chunk_manager->set_terrain(this);
-	_chunk_manager->set_distance(_dynamic_distance);
-	_chunk_manager->set_chunk_size(_dynamic_shape_size);
-	add_child(_chunk_manager);
-	_chunk_manager->set_owner(this);
+	_body = memnew(StaticBody3D);
+	_terrain->add_child(_body, true);
+	_body->set_owner(_terrain);
+
+	_active_shapes.resize(_shape_count);
+	// smaller sizes might be possible
+	_inactive_shapes.resize(_shape_count * 2);
+	for (int i = 0; i < _shape_count; i++) {
+		_inactive_shapes[i] = _create_shape();
+		_inactive_shapes[_shape_count + i] = _create_shape();
+		_active_shapes[i] = Variant(1);
+	}
+
 	_initialized = true;
 
 	// TODO Get snap position instead
@@ -57,8 +270,11 @@ void Terrain3DCollision::update(Vector3 p_cam_pos) {
 }
 
 void Terrain3DCollision::destroy() {
-	remove_from_tree(_chunk_manager);
-	memdelete_safely(_chunk_manager);
+	_active_shapes.clear();
+	_inactive_shapes.clear();
+
+	remove_from_tree(_body);
+	memdelete_safely(_body);
 }
 
 void Terrain3DCollision::set_mode(const CollisionMode p_mode) {
@@ -74,7 +290,7 @@ void Terrain3DCollision::set_mode(const CollisionMode p_mode) {
 	}
 }
 
-void Terrain3DCollision::set_dynamic_shape_size(const uint32_t p_size) {
+void Terrain3DCollision::set_shape_size(const uint32_t p_size) {
 	// Round up to nearest power of 2
 	uint32_t size = p_size;
 	{
@@ -88,20 +304,24 @@ void Terrain3DCollision::set_dynamic_shape_size(const uint32_t p_size) {
 	}
 	size = CLAMP(size, 8, 256);
 	LOG(INFO, "Setting collision dynamic shape size: ", size);
-	_dynamic_shape_size = size;
+	_shape_size = size;
 	_initialized = false;
-	if (size > _dynamic_distance) {
-		set_dynamic_distance(size);
+	if (size > _distance) {
+		set_distance(size);
 	} else {
 		build();
 	}
 }
 
-void Terrain3DCollision::set_dynamic_distance(const real_t p_distance) {
-	real_t distance = MAX(_dynamic_shape_size, p_distance);
+void Terrain3DCollision::set_distance(const real_t p_distance) {
+	real_t distance = MAX(_shape_size, p_distance);
 	distance = CLAMP(distance, 24.0, 256);
 	LOG(INFO, "Setting collision dynamic distance: ", distance);
-	_dynamic_distance = distance;
+	_distance = distance;
+
+	_shape_width = ceil((_distance + 1.0) / _shape_size) * 2.0;
+	_shape_count = _shape_width * _shape_width;
+
 	_initialized = false;
 	build();
 }

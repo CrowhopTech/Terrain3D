@@ -13,15 +13,12 @@
 #include <godot_cpp/classes/sub_viewport.hpp>
 
 #include "constants.h"
-#include "editor_collision_chunk_manager.h"
 #include "terrain_3d_assets.h"
 #include "terrain_3d_collision.h"
 #include "terrain_3d_data.h"
 #include "terrain_3d_editor.h"
 #include "terrain_3d_instancer.h"
 #include "terrain_3d_material.h"
-
-class CollisionChunkManager;
 
 using namespace godot;
 
@@ -65,9 +62,6 @@ private:
 	bool _save_16_bit = false;
 	real_t _label_distance = 0.f;
 	int _label_size = 48;
-
-	// Collision
-	CollisionChunkManager *_chunk_manager = nullptr;
 
 	// Meshes
 	int _mesh_lods = 7;
@@ -202,10 +196,10 @@ public:
 	// Collision Aliases
 	void set_collision_mode(const CollisionMode p_mode) { (_collision != nullptr) ? _collision->set_mode(p_mode) : void(); }
 	CollisionMode get_collision_mode() const { return (_collision != nullptr) ? _collision->get_mode() : CollisionMode::DISABLED; }
-	void set_collision_dynamic_shape_size(const uint32_t p_size) { (_collision != nullptr) ? _collision->set_dynamic_shape_size(p_size) : void(); }
-	uint32_t get_collision_dynamic_shape_size() const { return (_collision != nullptr) ? _collision->get_dynamic_shape_size() : 0; }
-	void set_collision_dynamic_distance(const real_t p_distance) { (_collision != nullptr) ? _collision->set_dynamic_distance(p_distance) : void(); }
-	real_t get_collision_dynamic_distance() const { return (_collision != nullptr) ? _collision->get_dynamic_distance() : 0.f; }
+	void set_collision_shape_size(const uint32_t p_size) { (_collision != nullptr) ? _collision->set_shape_size(p_size) : void(); }
+	uint32_t get_collision_shape_size() const { return (_collision != nullptr) ? _collision->get_shape_size() : 0; }
+	void set_collision_distance(const real_t p_distance) { (_collision != nullptr) ? _collision->set_distance(p_distance) : void(); }
+	real_t get_collision_distance() const { return (_collision != nullptr) ? _collision->get_distance() : 0.f; }
 	void set_collision_layer(const uint32_t p_layers) { (_collision != nullptr) ? _collision->set_layer(p_layers) : void(); }
 	uint32_t get_collision_layer() const { return (_collision != nullptr) ? _collision->get_layer() : 0; }
 	void set_collision_mask(const uint32_t p_mask) { (_collision != nullptr) ? _collision->set_mask(p_mask) : void(); }

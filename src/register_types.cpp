@@ -3,8 +3,6 @@
 #include <gdextension_interface.h>
 #include <godot_cpp/core/class_db.hpp>
 
-#include "editor_collision_chunk.h"
-#include "editor_collision_chunk_manager.h"
 #include "register_types.h"
 #include "terrain_3d.h"
 #include "terrain_3d_editor.h"
@@ -26,11 +24,6 @@ void initialize_terrain_3d(ModuleInitializationLevel p_level) {
 	ClassDB::register_class<Terrain3DRegion>();
 	ClassDB::register_class<Terrain3DTextureAsset>();
 	ClassDB::register_class<Terrain3DUtil>();
-	ClassDB::register_class<BaseChunk>();
-	ClassDB::register_class<EditorCollisionChunk>();
-	ClassDB::register_class<ChunkManager>();
-	ClassDB::register_class<CollisionChunkManager>();
-	ClassDB::register_class<EditorCollisionChunkManager>();
 }
 
 void uninitialize_terrain_3d(ModuleInitializationLevel p_level) {
