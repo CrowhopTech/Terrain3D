@@ -8,6 +8,7 @@ using namespace godot;
 // Constants
 
 #define RS RenderingServer::get_singleton()
+#define PS PhysicsServer3D::get_singleton()
 #define IS_EDITOR Engine::get_singleton()->is_editor_hint()
 
 #define COLOR_NAN Color(NAN, NAN, NAN, NAN)
@@ -24,6 +25,7 @@ using namespace godot;
 #endif
 
 #define V2(x) Vector2(x, x)
+#define V2I(x) Vector2i(x, x)
 #define V2_ZERO Vector2(0.f, 0.f)
 #define V2I_ZERO Vector2i(0, 0)
 #define V2_MAX Vector2(FLT_MAX, FLT_MAX)
@@ -92,6 +94,17 @@ using namespace godot;
 		LOG(ERROR, mesg);                                         \
 		return ret;                                               \
 	}
+
+// Custom runtime assertion function
+// https://www.reddit.com/r/cpp_questions/comments/uvf9gx/stdis_constant_evaluated_and_static_assert/
+template <typename = void>
+constexpr void assert_false(const char *file, const int line, const char *condition) noexcept {
+	//std::printf("%s:%d: Assertion \"%s\" failed\n", file, line, condition);
+	UtilityFunctions::push_error("Assertion '", condition, "' failed at ", file, ":", line);
+}
+
+#define CONSTEXPR_ASSERT(condition) \
+	((condition) ? (void)0 : assert_false(__FILE__, __LINE__, #condition))
 
 // Global Types
 

@@ -60,9 +60,9 @@ void Terrain3D::_initialize() {
 		_data->connect("region_map_changed", callable_mp(this, &Terrain3D::update_region_labels));
 	}
 	// Any region was changed, regenerate collision if enabled
-	if (!_data->is_connected("region_map_changed", callable_mp(this, &Terrain3DCollision::build))) {
+	if (!_data->is_connected("region_map_changed", callable_mp(_collision, &Terrain3DCollision::build))) {
 		LOG(DEBUG, "Connecting _data::region_map_changed signal to build()");
-		_data->connect("region_map_changed", callable_mp(this, &Terrain3DCollision::build));
+		_data->connect("region_map_changed", callable_mp(_collision, &Terrain3DCollision::build));
 	}
 	// Any map was regenerated or regions changed, update material
 	if (!_data->is_connected("maps_changed", callable_mp(_material.ptr(), &Terrain3DMaterial::_update_maps))) {
@@ -788,19 +788,22 @@ void Terrain3D::set_cull_margin(const real_t p_margin) {
  */
 void Terrain3D::snap(const Vector3 &p_cam_pos) {
 	Vector3 cam_pos = p_cam_pos;
-	cam_pos.y = 0;
-	LOG(EXTREME, "Snapping terrain to: ", String(cam_pos));
-	Vector3 snapped_pos = (cam_pos / _vertex_spacing).floor() * _vertex_spacing;
-	Transform3D t = Transform3D().scaled(Vector3(_vertex_spacing, 1, _vertex_spacing));
-	t.origin = snapped_pos;
-	RS->instance_set_transform(_mesh_data.cross, t);
+	cam_pos.y = 0.f;
+	_snapped_position = (cam_pos / _vertex_spacing).floor() * _vertex_spacing;
+	LOG(EXTREME, "Snapping terrain to: ", _snapped_position);
+
+	// why?
+	Transform3D scaled_t = Transform3D().scaled(Vector3(_vertex_spacing, 1.f, _vertex_spacing));
+	scaled_t.origin = _snapped_position;
+	RS->instance_set_transform(_mesh_data.cross, scaled_t);
 
 	int edge = 0;
 	int tile = 0;
 
 	for (int l = 0; l < _mesh_lods; l++) {
+		// why?
 		real_t scale = real_t(1 << l) * _vertex_spacing;
-		snapped_pos = (cam_pos / scale).floor() * scale;
+		Vector3 snapped_pos = (cam_pos / scale).floor() * scale;
 		Vector3 tile_size = Vector3(real_t(_mesh_size << l), 0, real_t(_mesh_size << l)) * _vertex_spacing;
 		Vector3 base = snapped_pos - Vector3(real_t(_mesh_size << (l + 1)), 0.f, real_t(_mesh_size << (l + 1))) * _vertex_spacing;
 
@@ -830,7 +833,7 @@ void Terrain3D::snap(const Vector3 &p_cam_pos) {
 		}
 
 		if (l != _mesh_lods - 1) {
-			real_t next_scale = scale * 2.0f;
+			real_t next_scale = scale * 2.f;
 			Vector3 next_snapped_pos = (cam_pos / next_scale).floor() * next_scale;
 
 			// Position trims
@@ -863,7 +866,7 @@ void Terrain3D::snap(const Vector3 &p_cam_pos) {
 	}
 
 	if (_collision && _collision->is_dynamic_mode()) {
-		_collision->update(p_cam_pos);
+		_collision->update(_snapped_position);
 	}
 }
 
@@ -1276,6 +1279,7 @@ void Terrain3D::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_mesh_size"), &Terrain3D::get_mesh_size);
 	ClassDB::bind_method(D_METHOD("set_vertex_spacing", "scale"), &Terrain3D::set_vertex_spacing);
 	ClassDB::bind_method(D_METHOD("get_vertex_spacing"), &Terrain3D::get_vertex_spacing);
+	ClassDB::bind_method(D_METHOD("get_snapped_position"), &Terrain3D::get_snapped_position);
 
 	// Rendering
 	ClassDB::bind_method(D_METHOD("set_render_layers", "layers"), &Terrain3D::set_render_layers);

@@ -62,8 +62,47 @@ typedef Terrain3DUtil Util;
 // Math
 ///////////////////////////
 
-inline bool is_power_of_2(const int p_n) {
+// Convert Vector3 to Vector2i, ignoring Y
+inline Vector2i v3v2i(const Vector3 &p_v3) {
+	return Vector2i(p_v3.x, p_v3.z);
+}
+
+// Convert Vector2i to Vector3
+inline Vector3 v2iv3(const Vector2i &p_v2) {
+	return Vector3(p_v2.x, 0., p_v2.y);
+}
+
+template <typename T>
+inline bool is_power_of_2(const T p_n) {
 	return p_n && !(p_n & (p_n - 1));
+}
+
+// Integer round to multiples
+// https://stackoverflow.com/questions/3407012/rounding-up-to-the-nearest-multiple-of-a-number
+
+// Rounds up to a power of 2 multiple (3.7x faster)
+template <typename T>
+inline T int_ceil_pow2(T numToRound, T multiple) {
+	static_assert(std::numeric_limits<T>::is_integer, "Only integer types are allowed");
+	CONSTEXPR_ASSERT(is_power_of_2(multiple));
+	return (numToRound + multiple - 1) & -multiple;
+}
+
+// Rounds up to a multiple
+template <typename T>
+inline T int_ceil_mult(const T numToRound, const T multiple) {
+	static_assert(std::numeric_limits<T>::is_integer, "Only integer types are allowed");
+	CONSTEXPR_ASSERT(multiple != 0);
+	T isPositive = (T)(numToRound >= 0);
+	return multiple ? ((numToRound + isPositive * (multiple - 1)) / multiple) * multiple : 0;
+}
+
+// Rounds away from 0 to a multiple
+template <typename T>
+inline T int_round_inf_mult(const T numToRound, const T multiple) {
+	static_assert(std::numeric_limits<T>::is_integer, "Only integer types are allowed");
+	CONSTEXPR_ASSERT(multiple != 0);
+	return multiple ? ((numToRound + multiple - 1) / multiple) * multiple : 0;
 }
 
 // Integer division with rounding up, down, nearest
@@ -73,7 +112,7 @@ inline bool is_power_of_2(const int p_n) {
 
 // Integer division rounding up
 template <typename T>
-T int_divide_ceil(T numer, T denom) {
+inline T int_divide_ceil(const T numer, const T denom) {
 	static_assert(std::numeric_limits<T>::is_integer, "Only integer types are allowed");
 	T result = ((numer) < 0) != ((denom) < 0) ? (numer) / (denom) : ((numer) + ((denom) < 0 ? (denom) + 1 : (denom)-1)) / (denom);
 	return result;
@@ -81,7 +120,7 @@ T int_divide_ceil(T numer, T denom) {
 
 // Integer division rounding down
 template <typename T>
-T int_divide_floor(T numer, T denom) {
+inline T int_divide_floor(const T numer, const T denom) {
 	static_assert(std::numeric_limits<T>::is_integer, "Only integer types are allowed");
 	T result = ((numer) < 0) != ((denom) < 0) ? ((numer) - ((denom) < 0 ? (denom) + 1 : (denom)-1)) / (denom) : (numer) / (denom);
 	return result;
@@ -89,7 +128,7 @@ T int_divide_floor(T numer, T denom) {
 
 // Integer division rounding to nearest int
 template <typename T>
-T int_divide_round(T numer, T denom) {
+inline T int_divide_round(const T numer, const T denom) {
 	static_assert(std::numeric_limits<T>::is_integer, "Only integer types are allowed");
 	T result = ((numer) < 0) != ((denom) < 0) ? ((numer) - ((denom) / 2)) / (denom) : ((numer) + ((denom) / 2)) / (denom);
 	return result;

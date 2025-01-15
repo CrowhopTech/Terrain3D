@@ -5,6 +5,7 @@
 
 #include <godot_cpp/classes/collision_shape3d.hpp>
 #include <godot_cpp/classes/static_body3d.hpp>
+#include <vector>
 
 #include "constants.h"
 
@@ -27,30 +28,27 @@ public: // Constants
 
 private:
 	Terrain3D *_terrain = nullptr;
-	RID _static_body;
-	StaticBody3D *_editor_static_body = nullptr;
 
-	bool _initialized = false;
+	// Public settings
 	CollisionMode _mode = DYNAMIC_GAME;
-	uint32_t _shape_size = 16;
-	real_t _radius = 64.f;
+	uint16_t _shape_size = 16; // 8 to 64-256, multiples of 4/8?
+	uint16_t _radius = 64; // 8 to 256, multiples of 4/8/_shape_size?
 	uint32_t _layer = 1;
 	uint32_t _mask = 1;
 	real_t _priority = 1.f;
 
-	uint32_t _shape_width = 0;
-	uint32_t _shape_count = 0;
-	Array _active_shapes;
-	Array _old_shapes;
-	Array _inactive_shapes;
-	Vector2i _old_snapped_pos;
+	// Work data
+	RID _static_body_rid; // Physics Server Static Body
+	StaticBody3D *_static_body = nullptr; // Editor mode StaticBody3D
+	std::vector<RID *> _shape_rids; // All Physics Server CollisionShapes
+	std::vector<CollisionShape3D *> _shapes; // All CollisionShape3Ds
+	Array _inactive_shape_ids; // index into above arrays
 
-	CollisionShape3D *_create_shape();
-	void _destroy_shape(const CollisionShape3D &p_shape);
-	void _form_shape(CollisionShape3D &p_shape, const Vector3 &p_position);
-	Vector2i _snap_position(Vector3 p_position);
-	void _move_shape(const CollisionShape3D &p_shape, const Vector3 &p_position);
+	bool _initialized = false;
+	Vector2i _last_snapped_pos = V2I_MAX;
+	Vector2i _snap_to_grid(const Vector3 &p_pos);
 
+	void _form_shape(CollisionShape3D *p_shape, const Vector3 &p_position);
 public:
 	Terrain3DCollision() {}
 	~Terrain3DCollision() { destroy(); }
@@ -68,7 +66,7 @@ public:
 
 	void set_shape_size(const uint32_t p_size);
 	uint32_t get_shape_size() const { return _shape_size; }
-	void set_radius(const real_t p_radius);
+	void set_radius(const uint16_t p_radius);
 	real_t get_radius() const { return _radius; }
 	void set_layer(const uint32_t p_layers);
 	uint32_t get_layer() const { return _layer; };
@@ -79,10 +77,17 @@ public:
 	RID get_rid() const;
 
 protected:
-	void _bind_methods();
+	static void _bind_methods();
 };
 
 typedef Terrain3DCollision::CollisionMode CollisionMode;
 VARIANT_ENUM_CAST(Terrain3DCollision::CollisionMode);
+
+inline Vector2i Terrain3DCollision::_snap_to_grid(const Vector3 &p_pos) {
+	return Vector2i(
+				   Math::floor(p_pos.x / real_t(_shape_size) + 0.5),
+				   Math::floor(p_pos.z / real_t(_shape_size) + 0.5)) *
+			_shape_size;
+}
 
 #endif // TERRAIN3D_COLLISION_CLASS_H
