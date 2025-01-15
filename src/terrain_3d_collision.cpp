@@ -29,7 +29,7 @@ void Terrain3DCollision::_destroy_shape(const CollisionShape3D &p_shape) {
 	memdelete_safely(p_shape);
 }
 
-void Terrain3DCollision::_mold_shape(CollisionShape3D &p_shape, const Vector3 &p_position) {
+void Terrain3DCollision::_form_shape(CollisionShape3D &p_shape, const Vector3 &p_position) {
 	IS_DATA_INIT_MESG("Terrain not initialized", VOID);
 	Ref<Terrain3DData> data = _terrain->get_data();
 	int region_size = _terrain->get_region_size();
@@ -165,7 +165,7 @@ void Terrain3DCollision::_move_shape(const CollisionShape3D &p_shape, const Vect
 				// in world coordinates
 				Vector2i chunk_location = pos_snapped + Vector2i((i - _shape_width * 0.5) * _shape_size, (j - _shape_width * 0.5) * _shape_size);
 
-				bool too_far = Vector2(chunk_location).distance_to(Vector2(p_camera_position.x, p_camera_position.z)) > _distance;
+				bool too_far = Vector2(chunk_location).distance_to(Vector2(p_camera_position.x, p_camera_position.z)) > _radius;
 
 				switch (t) {
 					case 1:
@@ -220,14 +220,15 @@ void Terrain3DCollision::initialize(Terrain3D *p_terrain) {
 	if (p_terrain) {
 		_terrain = p_terrain;
 	}
-	build();
 	if (!IS_EDITOR && _mode != DYNAMIC_GAME) {
 		LOG(WARN, "Change collision mode to `DYNAMIC_GAME` for releases");
 	}
+	build();
 }
 
 void Terrain3DCollision::build() {
 	IS_DATA_INIT_MESG("Terrain3D not initialized.", VOID);
+
 	// Clear collision as the user might change modes in the editor
 	destroy();
 
@@ -256,7 +257,7 @@ void Terrain3DCollision::build() {
 	update(cam_pos);
 }
 
-void Terrain3DCollision::update(Vector3 p_cam_pos) {
+void Terrain3DCollision::update(const Vector3 &p_cam_pos) {
 	if (!_initialized) {
 		return;
 	}
@@ -306,20 +307,20 @@ void Terrain3DCollision::set_shape_size(const uint32_t p_size) {
 	LOG(INFO, "Setting collision dynamic shape size: ", size);
 	_shape_size = size;
 	_initialized = false;
-	if (size > _distance) {
-		set_distance(size);
+	if (size > _radius) {
+		set_radius(size);
 	} else {
 		build();
 	}
 }
 
-void Terrain3DCollision::set_distance(const real_t p_distance) {
-	real_t distance = MAX(_shape_size, p_distance);
-	distance = CLAMP(distance, 24.0, 256);
-	LOG(INFO, "Setting collision dynamic distance: ", distance);
-	_distance = distance;
+void Terrain3DCollision::set_radius(const real_t p_radius) {
+	real_t radius = MAX(_shape_size, p_radius);
+	radius = CLAMP(radius, 24.0, 256);
+	LOG(INFO, "Setting collision dynamic radius: ", radius);
+	_radius = radius;
 
-	_shape_width = ceil((_distance + 1.0) / _shape_size) * 2.0;
+	_shape_width = ceil((_radius + 1.0) / _shape_size) * 2.0;
 	_shape_count = _shape_width * _shape_width;
 
 	_initialized = false;
@@ -389,4 +390,30 @@ void Terrain3DCollision::_bind_methods() {
 	BIND_ENUM_CONSTANT(DYNAMIC_EDITOR);
 	BIND_ENUM_CONSTANT(FULL_GAME);
 	BIND_ENUM_CONSTANT(FULL_EDITOR);
+
+	ClassDB::bind_method(D_METHOD("set_mode", "mode"), &Terrain3DCollision::set_mode);
+	ClassDB::bind_method(D_METHOD("get_mode"), &Terrain3DCollision::get_mode);
+	ClassDB::bind_method(D_METHOD("is_enabled"), &Terrain3DCollision::is_enabled);
+	ClassDB::bind_method(D_METHOD("is_editor_mode"), &Terrain3DCollision::is_editor_mode);
+	ClassDB::bind_method(D_METHOD("is_dynamic_mode"), &Terrain3DCollision::is_dynamic_mode);
+
+	ClassDB::bind_method(D_METHOD("set_shape_size", "size"), &Terrain3DCollision::set_shape_size);
+	ClassDB::bind_method(D_METHOD("get_shape_size"), &Terrain3DCollision::get_shape_size);
+	ClassDB::bind_method(D_METHOD("set_radius", "radius"), &Terrain3DCollision::set_radius);
+	ClassDB::bind_method(D_METHOD("get_radius"), &Terrain3DCollision::get_radius);
+	ClassDB::bind_method(D_METHOD("set_layer", "layers"), &Terrain3DCollision::set_layer);
+	ClassDB::bind_method(D_METHOD("get_layer"), &Terrain3DCollision::get_layer);
+	ClassDB::bind_method(D_METHOD("set_mask", "mask"), &Terrain3DCollision::set_mask);
+	ClassDB::bind_method(D_METHOD("get_mask"), &Terrain3DCollision::get_mask);
+	ClassDB::bind_method(D_METHOD("set_priority", "priority"), &Terrain3DCollision::set_priority);
+	ClassDB::bind_method(D_METHOD("get_priority"), &Terrain3DCollision::get_priority);
+	ClassDB::bind_method(D_METHOD("get_rid"), &Terrain3DCollision::get_rid);
+
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "mode", PROPERTY_HINT_ENUM, "Disabled, Dynamic / Game,Dynamic / Editor,Full / Game,Full / Editor"), "set_mode", "get_mode");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "shape_size", PROPERTY_HINT_RANGE, "8,256,2"), "set_shape_size", "get_shape_size");
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "radius", PROPERTY_HINT_RANGE, "24,256,1"), "set_radius", "get_radius");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "layer", PROPERTY_HINT_LAYERS_3D_PHYSICS), "set_layer", "get_layer");
+	ADD_PROPERTY(PropertyInfo(Variant::INT, "mask", PROPERTY_HINT_LAYERS_3D_PHYSICS), "set_mask", "get_mask");
+	ADD_PROPERTY(PropertyInfo(Variant::FLOAT, "priority"), "set_priority", "get_priority");
+
 }

@@ -198,8 +198,8 @@ public:
 	CollisionMode get_collision_mode() const { return (_collision != nullptr) ? _collision->get_mode() : CollisionMode::DISABLED; }
 	void set_collision_shape_size(const uint32_t p_size) { (_collision != nullptr) ? _collision->set_shape_size(p_size) : void(); }
 	uint32_t get_collision_shape_size() const { return (_collision != nullptr) ? _collision->get_shape_size() : 0; }
-	void set_collision_distance(const real_t p_distance) { (_collision != nullptr) ? _collision->set_distance(p_distance) : void(); }
-	real_t get_collision_distance() const { return (_collision != nullptr) ? _collision->get_distance() : 0.f; }
+	void set_collision_radius(const real_t p_radius) { (_collision != nullptr) ? _collision->set_radius(p_radius) : void(); }
+	real_t get_collision_radius() const { return (_collision != nullptr) ? _collision->get_radius() : 0.f; }
 	void set_collision_layer(const uint32_t p_layers) { (_collision != nullptr) ? _collision->set_layer(p_layers) : void(); }
 	uint32_t get_collision_layer() const { return (_collision != nullptr) ? _collision->get_layer() : 0; }
 	void set_collision_mask(const uint32_t p_mask) { (_collision != nullptr) ? _collision->set_mask(p_mask) : void(); }
