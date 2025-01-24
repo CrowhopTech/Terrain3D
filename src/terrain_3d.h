@@ -198,16 +198,16 @@ public:
 	// Collision Aliases
 	void set_collision_mode(const CollisionMode p_mode) { (_collision != nullptr) ? _collision->set_mode(p_mode) : void(); }
 	CollisionMode get_collision_mode() const { return (_collision != nullptr) ? _collision->get_mode() : CollisionMode::DYNAMIC_GAME; }
-	void set_collision_shape_size(const uint32_t p_size) { (_collision != nullptr) ? _collision->set_shape_size(p_size) : void(); }
-	uint32_t get_collision_shape_size() const { return (_collision != nullptr) ? _collision->get_shape_size() : 0; }
-	void set_collision_radius(const real_t p_radius) { (_collision != nullptr) ? _collision->set_radius(p_radius) : void(); }
-	real_t get_collision_radius() const { return (_collision != nullptr) ? _collision->get_radius() : 0.f; }
+	void set_collision_shape_size(const uint16_t p_size) { (_collision != nullptr) ? _collision->set_shape_size(p_size) : void(); }
+	uint16_t get_collision_shape_size() const { return (_collision != nullptr) ? _collision->get_shape_size() : 16; }
+	void set_collision_radius(const uint16_t p_radius) { (_collision != nullptr) ? _collision->set_radius(p_radius) : void(); }
+	uint16_t get_collision_radius() const { return (_collision != nullptr) ? _collision->get_radius() : 64; }
 	void set_collision_layer(const uint32_t p_layers) { (_collision != nullptr) ? _collision->set_layer(p_layers) : void(); }
-	uint32_t get_collision_layer() const { return (_collision != nullptr) ? _collision->get_layer() : 0; }
+	uint32_t get_collision_layer() const { return (_collision != nullptr) ? _collision->get_layer() : 1; }
 	void set_collision_mask(const uint32_t p_mask) { (_collision != nullptr) ? _collision->set_mask(p_mask) : void(); }
-	uint32_t get_collision_mask() const { return (_collision != nullptr) ? _collision->get_mask() : 0; }
+	uint32_t get_collision_mask() const { return (_collision != nullptr) ? _collision->get_mask() : 1; }
 	void set_collision_priority(const real_t p_priority) { (_collision != nullptr) ? _collision->set_priority(p_priority) : void(); }
-	real_t get_collision_priority() const { return (_collision != nullptr) ? _collision->get_priority() : 0.f; }
+	real_t get_collision_priority() const { return (_collision != nullptr) ? _collision->get_priority() : 1.f; }
 
 	// Debug View Aliases
 	void set_show_checkered(const bool p_enabled) { (_material != nullptr) ? _material->set_show_checkered(p_enabled) : void(); }

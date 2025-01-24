@@ -17,8 +17,7 @@
 ///////////////////////////
 
 // Calculates shape data from top left position. Assumes descaled and snapped.
-// Could be v2i
-Dictionary Terrain3DCollision::_get_shape_data(const Vector3 &p_position) {
+Dictionary Terrain3DCollision::_get_shape_data(const Vector2i &p_position) {
 	IS_DATA_INIT_MESG("Terrain not initialized", Dictionary());
 	Terrain3DData *data = _terrain->get_data();
 	int region_size = _terrain->get_region_size();
@@ -32,14 +31,12 @@ Dictionary Terrain3DCollision::_get_shape_data(const Vector3 &p_position) {
 	Ref<Image> map, map_x, map_z, map_xz; // height maps
 	Ref<Image> cmap, cmap_x, cmap_z, cmap_xz; // control maps w/ holes
 
-	// Get region_loc of top left corner of descaled and grid snapped collision shape position
-	Vector2 start_pos = v3v2(p_position); // top left corner
-	Vector2i region_loc = Vector2i((start_pos / real_t(region_size)).floor());
 
+	// Get region_loc of top left corner of descaled and grid snapped collision shape position
+	Vector2i region_loc = data->_get_region_location(p_position);
 	Ref<Terrain3DRegion> region = data->get_region(region_loc);
 	if (region.is_null()) {
-		// TODO no need to error
-		//LOG(ERROR, "Region not found at: ", region_loc);
+		LOG(DEBUG, "Region not found at: ", region_loc, ". Returning blank");
 		return Dictionary();
 	}
 	map = region->get_map(TYPE_HEIGHT);
@@ -67,19 +64,17 @@ Dictionary Terrain3DCollision::_get_shape_data(const Vector3 &p_position) {
 			// Choose array indexing to match triangulation of heightmapshape with the mesh
 			// https://stackoverflow.com/questions/16684856/rotating-a-2d-pixel-array-by-90-degrees
 			// Normal array index rotated Y=0 - shape rotation Y=0 (xform below)
-			// int index = z * shape_size + x;
+			// int index = z * hshape_size + x;
 			// Array Index Rotated Y=-90 - must rotate shape Y=+90 (xform below)
 			int index = hshape_size - 1 - z + x * hshape_size;
 
-			int img_x = Math::posmod(start_pos.x + x, region_size);
-			int loc_x = floor(real_t(start_pos.x + x) / real_t(region_size));
-			int loc_xb = int_divide_floor(int(start_pos.x) + x, region_size);
-			bool next_x = loc_x > region_loc.x;
+			Vector2i shape_pos = p_position + Vector2i(x, z);
+			Vector2i shape_region_loc = data->_get_region_location(shape_pos);
+			int img_x = Math::posmod(shape_pos.x, region_size);
+			bool next_x = shape_region_loc.x > region_loc.x;
+			int img_y = Math::posmod(shape_pos.y, region_size);
+			bool next_z = shape_region_loc.y > region_loc.y;
 
-			int img_y = Math::posmod(start_pos.y + z, region_size);
-			int loc_y = floor(real_t(start_pos.y + z) / real_t(region_size));
-			int loc_yb = int_divide_floor(int(start_pos.y) + z, region_size);
-			bool next_z = loc_y > region_loc.y;
 
 			// Set heights on local map, or adjacent maps if on the last row/col
 			real_t height = 0.f;
@@ -104,7 +99,7 @@ Dictionary Terrain3DCollision::_get_shape_data(const Vector3 &p_position) {
 	// Non rotated shape for normal array index above
 	//Transform3D xform = Transform3D(Basis(), global_pos);
 	// Rotated shape Y=90 for -90 rotated array index
-	Transform3D xform = Transform3D(Basis(Vector3(0, 1.0, 0), Math_PI * .5), v2iv3(start_pos + V2(_shape_size / 2)));
+	Transform3D xform = Transform3D(Basis(Vector3(0, 1.0, 0), Math_PI * .5), v2iv3(p_position + V2(_shape_size / 2)));
 	Dictionary shape_data;
 	shape_data["width"] = hshape_size;
 	shape_data["depth"] = hshape_size;
@@ -122,6 +117,8 @@ Dictionary Terrain3DCollision::_get_shape_data(const Vector3 &p_position) {
 void Terrain3DCollision::initialize(Terrain3D *p_terrain) {
 	if (p_terrain) {
 		_terrain = p_terrain;
+	} else {
+		return;
 	}
 	if (!IS_EDITOR && is_editor_mode()) {
 		LOG(WARN, "Change collision mode to a non-editor mode for releases");
@@ -130,6 +127,11 @@ void Terrain3DCollision::initialize(Terrain3D *p_terrain) {
 }
 
 void Terrain3DCollision::build() {
+	if (_terrain == nullptr) {
+		LOG(DEBUG, "Build called before terrain initialized. Returning.");
+		return;
+	}
+
 	IS_DATA_INIT_MESG("Terrain3D not initialized.", VOID);
 
 	// Clear collision as the user might change modes in the editor
@@ -173,7 +175,7 @@ void Terrain3DCollision::build() {
 
 	// Create CollisionShape3Ds
 	int shape_count;
-	int hshape_size; // 8 panels = 9 vertices for HeightmapShapes
+	int hshape_size;
 	if (is_dynamic_mode()) {
 		int grid_width = _radius * 2 / _shape_size;
 		grid_width = int_ceil_pow2(grid_width, 4);
@@ -289,7 +291,6 @@ void Terrain3DCollision::update(const Vector3 &p_cam_pos) {
 					//Shouldn't trigger because of radius shouldn't be larger than index
 					if (grid_loc.x < 0 || grid_loc.y < 0 || (grid_loc.y * grid_width + grid_loc.x) >= grid.size()) {
 						LOG(ERROR, "Shape ", i, ": grid_loc out of bounds: ", grid_loc, " shape_pos: ", shape_pos, " - shouldn't happen!"); // temp check
-						//LOG(MESG, "Shape ", i, ": current pos out of bounds, marking inactive");
 						_inactive_shape_ids.push_back(i);
 						shape->set_disabled(true);
 						continue;
@@ -327,7 +328,9 @@ void Terrain3DCollision::update(const Vector3 &p_cam_pos) {
 
 		for (int i = 0; i < grid.size(); i++) {
 			Vector2i grid_loc(i % grid_width, i / grid_width);
+			// Unique key: Top left corner of shape, snapped to grid
 			Vector2i shape_pos = grid_pos + grid_loc * _shape_size;
+
 			if (grid[i] >= 0) {
 				CollisionShape3D *shape = _shapes[grid[i]];
 				Vector2i center_pos = v3v2i(shape->get_global_position());
@@ -338,9 +341,7 @@ void Terrain3DCollision::update(const Vector3 &p_cam_pos) {
 					LOG(ERROR, "No more unused shapes! Aborting!");
 					break;
 				}
-				//LOG(MESG, "grid[", i, ":", grid_loc, "] snapped_pos + (grid_loc + grid_offset) * _shape_size + shape_offset => pos");
-				//LOG(MESG, "grid[", i, ":", grid_loc, "] ", snapped_pos, "+ (", grid_loc, " + ", grid_offset, ") * ", _shape_size, " + ", shape_offset, " => ", shape_pos2d);
-				Dictionary shape_data = _get_shape_data(v2iv3(shape_pos)); // *spacing
+				Dictionary shape_data = _get_shape_data(shape_pos); // *spacing
 				if (shape_data.is_empty()) {
 					LOG(MESG, "grid[", i, ":", grid_loc, "] shape_pos : ", shape_pos, " No region found");
 					continue;
@@ -413,7 +414,7 @@ void Terrain3DCollision::set_mode(const CollisionMode p_mode) {
 	}
 }
 
-void Terrain3DCollision::set_shape_size(const uint32_t p_size) {
+void Terrain3DCollision::set_shape_size(const uint16_t p_size) {
 	int size = CLAMP(p_size, 8, 256);
 	size = int_ceil_pow2(size, 4);
 	LOG(INFO, "Setting collision dynamic shape size: ", size);

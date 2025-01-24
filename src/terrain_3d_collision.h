@@ -53,16 +53,8 @@ private:
 	Vector2i _snap_to_grid(const Vector2i &p_pos) const;
 	Vector2i _snap_to_grid(const Vector3 &p_pos) const;
 	Vector2 _snap_to_gridf(const Vector3 &p_pos) const;
-	Dictionary _get_shape_data(const Vector3 &p_position);
+	Dictionary _get_shape_data(const Vector2i &p_position);
 
-	/// <summary>
-	/// TODO
-	/// 	* Retained shapes don't seem to be in the right spot. Rename step 2 vars
-	/// 	* Never see shapes disabled
-	/// 	* Running out of shapes
-	/// 	* Collision Enum inline docs
-	/// 	* fltmax position doesn't work when multi selecting nodes
-	/// </summary>
 public:
 	Terrain3DCollision() {}
 	~Terrain3DCollision() { destroy(); }
@@ -78,8 +70,8 @@ public:
 	bool is_editor_mode() const { return _mode == DYNAMIC_EDITOR || _mode == FULL_EDITOR; }
 	bool is_dynamic_mode() const { return _mode == DYNAMIC_GAME || _mode == DYNAMIC_EDITOR; }
 
-	void set_shape_size(const uint32_t p_size);
-	uint32_t get_shape_size() const { return _shape_size; }
+	void set_shape_size(const uint16_t p_size);
+	uint16_t get_shape_size() const { return _shape_size; }
 	void set_radius(const uint16_t p_radius);
 	uint16_t get_radius() const { return _radius; }
 	void set_layer(const uint32_t p_layers);

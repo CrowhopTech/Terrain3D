@@ -97,7 +97,7 @@ public:
 	void do_for_regions(const Rect2i &p_area, const Callable &p_callback);
 	void change_region_size(int region_size);
 
-	Vector2i _get_region_location(const Vector3 &p_position) const;
+	Vector2i _get_region_location(const Vector2i &p_position) const;
 	Vector2i get_region_location(const Vector3 &p_global_position) const;
 	int get_region_id(const Vector2i &p_region_loc) const;
 	int get_region_idp(const Vector3 &p_global_position) const;
@@ -212,8 +212,8 @@ inline int Terrain3DData::get_region_map_index(const Vector2i &p_region_loc) {
 }
 
 // Returns a region location given a descaled position. No bounds checking nor data access.
-inline Vector2i Terrain3DData::_get_region_location(const Vector3 &p_position) const {
-	return Vector2i(v3v2(p_position / real_t(_region_size)).floor());
+inline Vector2i Terrain3DData::_get_region_location(const Vector2i &p_position) const {
+	return V2I_DIVIDE_FLOOR(p_position, _region_size);
 }
 
 // Returns a region location given a global position. No bounds checking nor data access.
