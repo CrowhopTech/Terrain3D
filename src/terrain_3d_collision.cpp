@@ -331,6 +331,11 @@ void Terrain3DCollision::update(const Vector3 &p_cam_pos) {
 			// Unique key: Top left corner of shape, snapped to grid
 			Vector2i shape_pos = grid_pos + grid_loc * _shape_size;
 
+			if ((shape_pos + shape_offset).distance_to(snapped_pos) > real_t(_radius) / spacing) {
+				LOG(MESG, "grid[", i, ":", grid_loc, "] shape_pos : ", shape_pos, " out of circle, skipping");
+				continue;
+			}
+
 			if (grid[i] >= 0) {
 				CollisionShape3D *shape = _shapes[grid[i]];
 				Vector2i center_pos = v3v2i(shape->get_global_position());
