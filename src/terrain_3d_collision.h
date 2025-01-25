@@ -41,10 +41,7 @@ private:
 	// Work data
 	RID _static_body_rid; // Physics Server Static Body
 	StaticBody3D *_static_body = nullptr; // Editor mode StaticBody3D
-	std::vector<RID *> _shape_rids; // All Physics Server CollisionShapes
 	std::vector<CollisionShape3D *> _shapes; // All CollisionShape3Ds
-	// can be a packedintarray
-	Array _inactive_shape_ids; // index into above arrays
 
 	bool _initialized = false;
 	Vector2i _last_snapped_pos = V2I_MAX;
@@ -54,6 +51,11 @@ private:
 	Vector2i _snap_to_grid(const Vector3 &p_pos) const;
 	Vector2 _snap_to_gridf(const Vector3 &p_pos) const;
 	Dictionary _get_shape_data(const Vector2i &p_position);
+
+	void _shape_set_disabled(const int p_shape_id, const bool p_disabled);
+	void _shape_set_transform(const int p_shape_id, const Transform3D &p_xform);
+	Vector3 _shape_get_position(const int p_shape_id) const;
+	void _shape_set_data(const int p_shape_id, const Dictionary &p_dict);
 
 public:
 	Terrain3DCollision() {}
