@@ -53,7 +53,7 @@ using namespace godot;
 // Validation macros
 
 #define ASSERT(cond, ret)                                                                            \
-	if (!cond) {                                                                                     \
+	if (!(cond)) {                                                                                   \
 		UtilityFunctions::push_error("Assertion '", #cond, "' failed at ", __FILE__, ":", __LINE__); \
 		return ret;                                                                                  \
 	}
