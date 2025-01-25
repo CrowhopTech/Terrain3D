@@ -91,14 +91,6 @@ inline bool is_power_of_2(const T p_n) {
 // Integer round to multiples
 // https://stackoverflow.com/questions/3407012/rounding-up-to-the-nearest-multiple-of-a-number
 
-// Integer round up to a power of 2 multiple (3.7x faster)
-template <typename T>
-inline T int_ceil_pow2(T numToRound, T multiple) {
-	static_assert(std::numeric_limits<T>::is_integer, "Only integer types are allowed");
-	ASSERT(is_power_of_2(multiple), int_ceil_mult(numToRound, multiple));
-	return (numToRound + multiple - 1) & -multiple;
-}
-
 // Integer round up to a multiple
 template <typename T>
 inline T int_ceil_mult(const T numToRound, const T multiple) {
@@ -106,6 +98,14 @@ inline T int_ceil_mult(const T numToRound, const T multiple) {
 	ASSERT(multiple != 0, 0);
 	T isPositive = (T)(numToRound >= 0);
 	return ((numToRound + isPositive * (multiple - 1)) / multiple) * multiple;
+}
+
+// Integer round up to a power of 2 multiple (3.7x faster)
+template <typename T>
+inline T int_ceil_pow2(T numToRound, T multiple) {
+	static_assert(std::numeric_limits<T>::is_integer, "Only integer types are allowed");
+	ASSERT(is_power_of_2(multiple), int_ceil_mult(numToRound, multiple));
+	return (numToRound + multiple - 1) & -multiple;
 }
 
 // Integer round to nearest +/- multiple
